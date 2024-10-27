@@ -10,3 +10,12 @@
 
 ## Firestore
 
+
+
+
+# その他
+
+## FirebaseAuth.instance.signInWithCredential(credential)でype 'List<Object?>' is not a subtype of type 'PigeonUserDetails?' in type castが発生する
+
+[公式の対応](https://github.com/firebase/flutterfire/issues/13077)はダメだった
+pubspec.ymlに記載されているFirebase関連のバージョンを変更し、flutter pub getしたら解決した。

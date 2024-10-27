@@ -1,6 +1,6 @@
 import 'dart:developer' as developer;
 
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 // Firebase Realtime Databaseを利用するために以下を追加
@@ -87,13 +87,14 @@ class _MainPageState extends State<MainPage> {
 
       Logger.info("Firebaseへのサインイン");
       // FirebaseにGoogleの認証情報でサインイン
-      var credential = firebase_auth.GoogleAuthProvider.credential(
+      var credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      var userCredential = await firebase_auth.FirebaseAuth.instance.signInWithCredential(credential);
-      Logger.info("ログイン成功: ${userCredential.user?.displayName}");
+      await FirebaseAuth.instance.signInWithCredential(credential);
+//      var userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+//      Logger.info("ログイン成功: ${userCredential.user?.displayName}");
       // ログイン成功後の画面遷移などを実行
     }catch(e){
       Logger.error("ログインエラー", exception: e);
