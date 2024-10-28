@@ -19,6 +19,8 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final TextEditingController _logController = TextEditingController(text: "");
+  final ScrollController _logScrollController = ScrollController();
 
   @override
   void initState() {
@@ -36,68 +38,127 @@ class _MainPageState extends State<MainPage> {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TextButton.icon(
-              onPressed: () async {
-                _callGoogleSignIn();
-              },
-              icon: const Icon(Icons.login, size: 32,),
-              label: Text("ログイン", style: textStyle),
+          children: [
+            Expanded(
+              flex: 5,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  TextButton.icon(
+                    onPressed: () async {
+                      _login();
+                    },
+                    icon: const Icon(Icons.login, size: 32,),
+                    label: Text("ログイン", style: textStyle),
+                  ),
+                  TextButton.icon(
+                    onPressed: () async {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const RealtimeDatabasePage(),)
+                      );
+                    },
+                    icon: const Icon(Icons.next_plan, size: 32,),
+                    label: Text("RealtimeDatabase", style: textStyle),
+                  ),
+                  TextButton.icon(
+                    onPressed: () async {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const FireStorePage(),)
+                      );
+                    },
+                    icon: const Icon(Icons.next_plan, size: 32,),
+                    label: Text("FireStore", style: textStyle),
+                  ),
+                ],
+              ),
             ),
-            TextButton.icon(
-              onPressed: () async {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RealtimeDatabasePage(),)
-                );
-              },
-              icon: const Icon(Icons.next_plan, size: 32,),
-              label: Text("RealtimeDatabase", style: textStyle),
-            ),
-            TextButton.icon(
-              onPressed: () async {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const FireStorePage(),)
-                );
-              },
-              icon: const Icon(Icons.next_plan, size: 32,),
-              label: Text("FireStore", style: textStyle),
+            Expanded(
+              flex: 5,
+              child: Scrollbar(
+                trackVisibility: true,
+                thumbVisibility: true,
+                interactive: true,
+                thickness: 10.0,
+                controller: _logScrollController,
+                child:SingleChildScrollView(
+                  controller: _logScrollController,
+                  child: TextField(
+                    keyboardType: TextInputType.multiline,
+                    maxLines: null,
+                    controller: _logController,
+                    readOnly: true,
+                    onChanged: (value) {
+                    },
+                  )
+                )
+              )
             ),
           ],
-        ),
-      ),
+        )
+      )
     );
   }
 
-  void _callGoogleSignIn() async{
-    try{
-      Logger.info("Googleへのサインイン");
-      // Googleサインインをトリガー
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        Logger.warn("Googleログインキャンセルされました");
-        return;
-      }
-
-      Logger.info("Google認証情報を取得");
-      // Google認証情報を取得
-      var googleAuth = await googleUser.authentication;
-
-      Logger.info("Firebaseへのサインイン");
-      // FirebaseにGoogleの認証情報でサインイン
-      var credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      await FirebaseAuth.instance.signInWithCredential(credential);
-//      var userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-//      Logger.info("ログイン成功: ${userCredential.user?.displayName}");
-      // ログイン成功後の画面遷移などを実行
-    }catch(e){
-      Logger.error("ログインエラー", exception: e);
-    }
+  void _addLog(String text){
+    setState(() {
+      _logController.text += "$text\n";
+    });
+    Logger.info(text);
   }
+
+  void _addErrorLog(String text, Object? e){
+    setState(() {
+      _logController.text += "$text\n";
+    });
+    Logger.error(text, exception: e);
+  }
+
+  /// GoogleサインインとFirebase認証
+  void _login() async{
+    _addLog("ログイン開始");
+
+    GoogleSignInAuthentication? googleAuth;
+    try{
+      googleAuth = await _googleAuth();
+    }catch(e){
+      _addErrorLog("ログインエラー", e);
+    }
+
+    if(googleAuth == null){
+      _addLog("Googleログインキャンセルされました");
+    }
+
+    _addLog("Firebase認証");
+    try{
+      _firebaseAuth(googleAuth!);
+    }catch(e){
+      _addErrorLog("ログインエラー", e);
+    }
+    _addLog("ログイン完了");
+  }
+
+  /// Googl認証
+  Future<GoogleSignInAuthentication?> _googleAuth() async{
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) {
+      return null;
+    }
+
+    _addLog("Google認証情報を取得");
+    // Google認証情報を取得
+    return await googleUser.authentication;
+  }
+
+  /// Firebase認証
+  Future<UserCredential?> _firebaseAuth(GoogleSignInAuthentication auth) async{
+    var credential = GoogleAuthProvider.credential(
+      accessToken: auth.accessToken,
+      idToken: auth.idToken,
+    );
+
+    return await FirebaseAuth.instance.signInWithCredential(credential);
+  }
+
 }

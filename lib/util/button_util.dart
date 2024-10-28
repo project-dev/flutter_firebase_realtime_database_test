@@ -10,7 +10,7 @@ class ButtonUtil{
     double? size = 32,
   }){
     return TextButton.icon(
-      onPressed: () => onPressed,
+      onPressed: onPressed,
       icon: Icon(icon, size: size),
       label: Text(label, style: TextStyle(fontSize: size),),
     );
