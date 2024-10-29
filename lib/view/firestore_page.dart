@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-// Firebase Realtime Databaseを利用するために以下を追加
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter_firebase_realtime_database_test/util/logger.dart';
 
+import '../Model/person_model.dart';
 import '../util/button_util.dart';
 
 
@@ -29,8 +28,6 @@ class _FireStorePageState extends State<FireStorePage> {
 
   @override
   Widget build(BuildContext context) {
-    var textStyle = const TextStyle(fontSize: 32);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -44,43 +41,95 @@ class _FireStorePageState extends State<FireStorePage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-
-                  ButtonUtil.create(
-                    onPressed: () async {
-                      _addLog("初期化");
-                      await _initData();
-                    },
-                    icon: Icons.format_color_reset,
-                    label: "初期化",
+                  Row(
+                    children: [
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("初期化");
+                          await _initData();
+                        },
+                        icon: Icons.format_color_reset,
+                        label: "初期化",
+                      ),
+                    ],
                   ),
+                  Row(
+                    children: [
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("追加(ID自動)");
+                          await _addNewItem();
+                        },
+                        icon: Icons.create_new_folder,
+                        label: "追加(ID自動)",
+                      ),
 
-                  ButtonUtil.create(
-                    onPressed: () async {
-                      _addLog("データ表示");
-                      await _viewData();
-                    },
-                    icon: Icons.view_day_sharp,
-                    label: "データ表示",
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("追加(ID指定)");
+                          await _setNewItem();
+                        },
+                        icon: Icons.create_new_folder,
+                        label: "追加(ID指定)",
+                      ),
+                    ],
                   ),
-
-                  ButtonUtil.create(
-                    onPressed: () async {
-                      _addLog("追加(ID自動)");
-                      await _addNewItem();
-                    },
-                    icon: Icons.create_new_folder,
-                    label: "追加(ID自動)",
+                  Row(
+                    children: [
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("更新");
+                          await _updateItem();
+                        },
+                        icon: Icons.create_new_folder,
+                        label: "更新",
+                      ),
+                    ],
                   ),
-
-                  ButtonUtil.create(
-                    onPressed: () async {
-                      _addLog("追加(ID指定)");
-                      await _setNewItem();
-                    },
-                    icon: Icons.create_new_folder,
-                    label: "追加(ID指定)",
+                  Row(
+                    children: [
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("全データ表示");
+                          await _viewData();
+                        },
+                        icon: Icons.view_day_sharp,
+                        label: "全データ表示",
+                      ),
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("全データ表示(model)");
+                          await _getDataModel();
+                        },
+                        icon: Icons.view_day_sharp,
+                        label: "全データ表示(model)",
+                      ),
+                    ],
                   ),
-
+                  Row(
+                    children: [
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("単体データ取得");
+                          await _getData();
+                        },
+                        icon: Icons.file_upload,
+                        label: "単体データ取得",
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("単体データ削除");
+                          await _deleteData();
+                        },
+                        icon: Icons.delete,
+                        label: "単体データ削除",
+                      ),
+                    ],
+                  ),
                 ],
               )
             ),
@@ -133,9 +182,14 @@ class _FireStorePageState extends State<FireStorePage> {
   /// データの書p帰化
   Future<void> _initData() async{
     _addLog("-- データを初期状態にする start ----------");
-
     try{
       _addLog("users コレクションを取得");
+
+      FirebaseFirestore.instance.collection('users2').add({
+        'name':'aaaaa',
+        'age':24
+      });
+
       // Userコレクションを取得
       CollectionReference users = FirebaseFirestore.instance.collection ('users');
       _addLog("取得したコレクションを確認");
@@ -189,7 +243,7 @@ class _FireStorePageState extends State<FireStorePage> {
 
     // ドキュメントを表示
     for (var doc in querySnapshot.docs) {
-      _addLog("削除 ID : ${doc.id} / DATA : ${doc.data()}");
+      _addLog("ID : ${doc.id} / DATA : ${doc.data()}");
     }
   }
 
@@ -214,6 +268,45 @@ class _FireStorePageState extends State<FireStorePage> {
           "age":"${querySnapshot.size}"
         }
     );
+  }
 
+  /// 更新
+  Future<void> _updateItem() async{
+    CollectionReference users = FirebaseFirestore.instance.collection ('users');
+    await users.doc("user1").set(
+        {
+          "name":"名前更新",
+          "age":"100"
+        }
+    );
+  }
+
+  /// 取得(モデル)
+  Future<void> _getData() async{
+    // Userコレクションを取得
+    var data = await FirebaseFirestore.instance.collection('users').doc('user1').get();
+    var fields = data.data();
+    _addLog("Name : ${fields?['name']} / Age : ${fields?['age']}");
+  }
+
+  /// 取得(モデル)
+  Future<void> _getDataModel() async{
+    // Userコレクションを取得
+    var users = await FirebaseFirestore.instance.collection ('users').get();
+    var persons = users.docs.map((doc) => PersonModel(
+      name: doc['name'],
+      age: int.parse(doc['age'].toString())
+    )).toList();
+    _addLog("data length${persons.length}");
+    for (var model in persons) {
+      _addLog("Name : ${model.name} / Age : ${model.age}");
+    }
+  }
+
+  /// 削除
+  Future<void> _deleteData() async{
+    // Userコレクションを取得
+    var data = await FirebaseFirestore.instance.collection('users').doc('user1').get();
+    data.reference.delete();
   }
 }

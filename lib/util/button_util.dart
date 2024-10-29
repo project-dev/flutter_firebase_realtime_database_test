@@ -7,7 +7,7 @@ class ButtonUtil{
     required void Function() onPressed,
     required IconData? icon,
     required String label,
-    double? size = 32,
+    double? size = 24,
   }){
     return TextButton.icon(
       onPressed: onPressed,

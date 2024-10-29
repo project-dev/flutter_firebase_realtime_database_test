@@ -119,7 +119,7 @@ class _RealtimeDatabasePageState extends State<RealtimeDatabasePage> {
             ButtonUtil.create(
               onPressed: () async{
                 final ref = FirebaseDatabase.instance.ref('users/3');
-                var result = await ref.runTransaction((value){
+                await ref.runTransaction((value){
                   if(value == null){
                     return Transaction.abort();
                   }

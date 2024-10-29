@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 // Firebaseを利用する為に以下2つを追加
@@ -19,7 +20,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Firebase realtime Databaseのオフラインの永続性を設定
   FirebaseDatabase.instance.setPersistenceEnabled(true);
+
+  // Firestoreのオフラインの永続性を設定
+  FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
 
   runApp(const MyApp());
 }
