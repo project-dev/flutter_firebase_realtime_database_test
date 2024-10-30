@@ -37,7 +37,7 @@ class _FireStorePageState extends State<FireStorePage> {
         child: Column(
           children: [
             Expanded(
-              flex: 5,
+              flex: 6,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
@@ -50,6 +50,55 @@ class _FireStorePageState extends State<FireStorePage> {
                         },
                         icon: Icons.format_color_reset,
                         label: "初期化",
+                      ),
+                      ButtonUtil.create(
+                        onPressed: (){
+                          setState(() {
+                            _logController.text = "";
+                          });
+                        },
+                        icon: Icons.clear,
+                        label: "ログクリア",
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("全データ表示");
+                          await _viewData();
+                        },
+                        icon: Icons.view_day_sharp,
+                        label: "全データ表示",
+                      ),
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("全データ表示(model)");
+                          await _getDataModel();
+                        },
+                        icon: Icons.view_day_sharp,
+                        label: "全データ表示(model)",
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("単体データ取得");
+                          await _getData();
+                        },
+                        icon: Icons.file_upload,
+                        label: "単体データ取得",
+                      ),
+                      ButtonUtil.create(
+                        onPressed: () async {
+                          _addLog("データ抽出(20才以上)");
+                          await _getAge20Over();
+                        },
+                        icon: Icons.filter,
+                        label: "20才以上抽出",
                       ),
                     ],
                   ),
@@ -90,38 +139,6 @@ class _FireStorePageState extends State<FireStorePage> {
                     children: [
                       ButtonUtil.create(
                         onPressed: () async {
-                          _addLog("全データ表示");
-                          await _viewData();
-                        },
-                        icon: Icons.view_day_sharp,
-                        label: "全データ表示",
-                      ),
-                      ButtonUtil.create(
-                        onPressed: () async {
-                          _addLog("全データ表示(model)");
-                          await _getDataModel();
-                        },
-                        icon: Icons.view_day_sharp,
-                        label: "全データ表示(model)",
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      ButtonUtil.create(
-                        onPressed: () async {
-                          _addLog("単体データ取得");
-                          await _getData();
-                        },
-                        icon: Icons.file_upload,
-                        label: "単体データ取得",
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      ButtonUtil.create(
-                        onPressed: () async {
                           _addLog("単体データ削除");
                           await _deleteData();
                         },
@@ -136,7 +153,7 @@ class _FireStorePageState extends State<FireStorePage> {
 
             //　以下ログエリア
             Expanded(
-              flex: 5,
+              flex: 4,
               child: Scrollbar(
                 trackVisibility: true,
                 thumbVisibility: true,
@@ -150,9 +167,7 @@ class _FireStorePageState extends State<FireStorePage> {
                     maxLines: null,
                     controller: _logController,
                     readOnly: true,
-                    onChanged: (value) {
-
-                    },
+                    onChanged: (value) {},
                   )
                 )
               )
@@ -212,12 +227,28 @@ class _FireStorePageState extends State<FireStorePage> {
 
       // 初期データを作成
       _addLog("初期データを作成");
-      await users.doc("user1").set(
-          {
-            "name":"名前",
-            "age":"45"
-          }
-      );
+      var data = {
+        "user1":{
+          "name":"名前1",
+          "age":10
+        },
+        "user2":{
+          "name":"名前2",
+          "age":18
+        },
+        "user3":{
+          "name":"名前3",
+          "age":24
+        },
+        "user4":{
+          "name":"名前4",
+          "age":45
+        }
+      };
+
+      data.forEach((key, value) async {
+        await users.doc(key).set(value);
+      },);
 
     }catch(e){
       _addErrorLog("", e);
@@ -253,7 +284,7 @@ class _FireStorePageState extends State<FireStorePage> {
     await users.add(
       {
         "name":"名前2",
-        "age":"46"
+        "age":46
       }
     );
   }
@@ -262,10 +293,10 @@ class _FireStorePageState extends State<FireStorePage> {
   Future<void> _setNewItem() async{
     CollectionReference users = FirebaseFirestore.instance.collection ('users');
     var querySnapshot = await users.get();
-    await users.doc("user${querySnapshot.size}").set(
+    await users.doc("user${querySnapshot.size + 1}").set(
         {
-          "name":"名前${querySnapshot.size}",
-          "age":"${querySnapshot.size}"
+          "name":"名前${querySnapshot.size + 1}",
+          "age":querySnapshot.size + 1
         }
     );
   }
@@ -276,7 +307,7 @@ class _FireStorePageState extends State<FireStorePage> {
     await users.doc("user1").set(
         {
           "name":"名前更新",
-          "age":"100"
+          "age":100
         }
     );
   }
@@ -284,16 +315,16 @@ class _FireStorePageState extends State<FireStorePage> {
   /// 取得(モデル)
   Future<void> _getData() async{
     // Userコレクションを取得
-    var data = await FirebaseFirestore.instance.collection('users').doc('user1').get();
-    var fields = data.data();
+    var docSnapshot = await FirebaseFirestore.instance.collection('users').doc('user1').get();
+    var fields = docSnapshot.data();
     _addLog("Name : ${fields?['name']} / Age : ${fields?['age']}");
   }
 
   /// 取得(モデル)
   Future<void> _getDataModel() async{
     // Userコレクションを取得
-    var users = await FirebaseFirestore.instance.collection ('users').get();
-    var persons = users.docs.map((doc) => PersonModel(
+    var querySnapshot = await FirebaseFirestore.instance.collection ('users').get();
+    var persons = querySnapshot.docs.map((doc) => PersonModel(
       name: doc['name'],
       age: int.parse(doc['age'].toString())
     )).toList();
@@ -306,7 +337,21 @@ class _FireStorePageState extends State<FireStorePage> {
   /// 削除
   Future<void> _deleteData() async{
     // Userコレクションを取得
-    var data = await FirebaseFirestore.instance.collection('users').doc('user1').get();
-    data.reference.delete();
+    var querySnapshot = await FirebaseFirestore.instance.collection('users').doc('user1').get();
+    querySnapshot.reference.delete();
   }
+
+  /// 20才以上を抽出
+  Future<void> _getAge20Over() async{
+    // Userコレクションを取得
+    var collectionRef = FirebaseFirestore.instance.collection('users');
+    var query = collectionRef.where("age", isGreaterThanOrEqualTo: 20);
+    var querySnapshot = await query.get();
+
+    _addLog("data length ${querySnapshot.docs.length}");
+    for (var doc in querySnapshot.docs) {
+      _addLog("ID : ${doc.id} / DATA : ${doc.data()}");
+    }
+  }
+
 }
