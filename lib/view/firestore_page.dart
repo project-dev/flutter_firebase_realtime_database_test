@@ -24,6 +24,21 @@ class _FireStorePageState extends State<FireStorePage> {
     super.initState();
 
     _initData();
+
+    // 変更を検知するためにlistenを設定
+    var collectionRef = FirebaseFirestore.instance.collection ('users');
+    collectionRef.snapshots().listen((querySnapshot) {
+      _addLog("isFromCache ${querySnapshot.metadata.isFromCache}");
+
+      // 変更を検知
+      for (var doc in querySnapshot.docs) {
+        _addLog("update ${doc.id} : ${doc.data()}");
+      }
+    },
+    onError: (error){
+      // エラー
+      _addLog("error $error");
+    });
   }
 
   @override
